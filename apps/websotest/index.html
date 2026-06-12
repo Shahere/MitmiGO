@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test WebSocket</title>
+  </head>
+  <body>
+    <h1>Test WebSocket</h1>
+
+    <div>
+      <label>URL WebSocket :</label>
+      <input id="wsUrl" type="text" value="ws://localhost:3333/ws" size="40" />
+      <button onclick="connect()">Connecter</button>
+      <button onclick="disconnect()">Déconnecter</button>
+    </div>
+
+    <hr />
+
+    <div>
+      <input
+        id="messageInput"
+        type="text"
+        placeholder="Message à envoyer"
+        value=""
+        size="40"
+      />
+      <button onclick="sendMessage()">Envoyer</button>
+    </div>
+
+    <hr />
+
+    <h3>Logs</h3>
+    <pre id="logs"></pre>
+
+    <script>
+      let socket = null;
+
+      function log(message) {
+        const logs = document.getElementById("logs");
+        logs.textContent += message + "\n";
+        logs.scrollTop = logs.scrollHeight;
+      }
+
+      function connect() {
+        const url = document.getElementById("wsUrl").value;
+
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          log("Déjà connecté.");
+          return;
+        }
+
+        socket = new WebSocket(url);
+
+        socket.onopen = () => {
+          log("[OPEN] Connexion établie");
+        };
+
+        socket.onmessage = (event) => {
+          log("[RECV] " + event.data);
+        };
+
+        socket.onerror = (error) => {
+          log("[ERROR] Une erreur est survenue");
+          console.error(error);
+        };
+
+        socket.onclose = (event) => {
+          log(`[CLOSE] Code=${event.code} Raison=${event.reason}`);
+        };
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.close();
+        }
+      }
+
+      function sendMessage() {
+        const input = document.getElementById("messageInput");
+
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          log("Non connecté.");
+          return;
+        }
+
+        socket.send(input.value);
+        log("[SEND] " + input.value);
+
+        input.value = "";
+      }
+    </script>
+  </body>
+</html>
