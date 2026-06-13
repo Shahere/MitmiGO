@@ -35,6 +35,7 @@ type PayloadType struct {
 	Disconnect string                    `json:"disconnect"`
 	Sdp        RTCSessionDescriptionInit `json:"sdp"`
 	Candidate  any                       `json:"candidate"`
+	Mesh       bool                      `json:"mesh"`
 }
 
 func DecodeMessage(data []byte) (*Message, error) {

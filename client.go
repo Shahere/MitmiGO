@@ -62,6 +62,12 @@ func (client *Client) read(conn *websocket.Conn) {
 			break
 		}
 
+		if newMessage.Payload.Action == "join" && newMessage.Payload.Mesh == false {
+			//TODO Connect with server instead of other client
+			fmt.Println("SFU is asked")
+			continue
+		}
+
 		if newMessage.Target == "" {
 			client.hub.broadcast <- BroadcastType{message, client}
 			continue
