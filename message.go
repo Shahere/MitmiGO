@@ -31,6 +31,7 @@ type RTCSessionDescriptionInit struct {
 
 type PayloadType struct {
 	Action     ActionType                `json:"action"`
+	HubName    string                    `json:"hubname"`
 	Message    string                    `json:"message"`
 	Disconnect string                    `json:"disconnect"`
 	Sdp        RTCSessionDescriptionInit `json:"sdp"`

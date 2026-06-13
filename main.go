@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -23,11 +22,8 @@ func getHello(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Printf("Start server...\n")
 
-	hub := newHub()
-	go hub.run()
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("%s\n", r.Host)
+		/*fmt.Printf("%s\n", r.Host)
 		fmt.Printf("got / request\n")
 		clients := hub.getClients()
 		ipAddrClient := make([]string, len(clients))
@@ -37,13 +33,13 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ipAddrClient)
+		json.NewEncoder(w).Encode(ipAddrClient)*/
 	})
 	http.HandleFunc("/hello", getHello)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Access-Control-Allow-Origin", "*")
 		//w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		serveWs(hub, w, r)
+		serveWs(w, r)
 	})
 
 	port := 3333
