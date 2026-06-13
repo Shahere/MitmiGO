@@ -7,25 +7,49 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+var hubs = make([]*Hub, 0)
+
 type BroadcastType struct {
 	message []byte
 	client  *Client
 }
 
 type Hub struct {
+	name       string
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan BroadcastType
 }
 
-func newHub() *Hub {
-	return &Hub{
+func getOrCreateHub(hubName string) (*Hub, error) {
+	if hubName == "" {
+		return nil, errors.New("Empty hub name")
+	}
+	var hub *Hub
+	iHub := slices.IndexFunc(hubs, func(hub *Hub) bool {
+		return hub.name == hubName
+	})
+	if iHub == -1 {
+		hub = newHub(hubName)
+	} else {
+		hub = hubs[len(hubs)-1]
+	}
+
+	return hub, nil
+}
+
+func newHub(hubName string) *Hub {
+	hub := Hub{
+		name:       hubName,
 		clients:    make(map[*Client]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan BroadcastType),
 	}
+	go hub.run()
+	hubs = append(hubs, &hub)
+	return &hub
 }
 
 func (hub *Hub) getClients() []*Client {

@@ -41,9 +41,12 @@ func (client *Client) write(conn *websocket.Conn) {
 
 func (client *Client) read(conn *websocket.Conn) {
 	defer func() {
-		client.hub.unregister <- client
+		if client.hub != nil {
+			client.hub.unregister <- client
+		}
 		client.conn.Close()
 	}()
+
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -60,6 +63,12 @@ func (client *Client) read(conn *websocket.Conn) {
 		if !client.verifyIdentity(*newMessage) {
 			fmt.Printf("Identity is not correct !")
 			break
+		}
+
+		if client.hub == nil {
+			hub, _ := getOrCreateHub(newMessage.Payload.HubName)
+			client.hub = hub
+			client.hub.register <- client
 		}
 
 		if newMessage.Target == "" {
@@ -96,7 +105,7 @@ func (client *Client) verifyIdentity(newMessage Message) bool {
 	return true
 }
 
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func serveWs(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -105,11 +114,10 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("New client : %s\n", conn.RemoteAddr())
 	client := &Client{
-		hub:    hub,
+		hub:    nil,
 		conn:   conn,
 		toSend: make(chan []byte),
 	}
-	client.hub.register <- client
 
 	go client.read(conn)
 	go client.write(conn)
