@@ -65,16 +65,16 @@ func (client *Client) read(conn *websocket.Conn) {
 			break
 		}
 
-		if client.hub == nil {
-			hub, _ := getOrCreateHub(newMessage.Payload.HubName)
-			client.hub = hub
-			client.hub.register <- client
-		}
-
 		if newMessage.Payload.Action == "join" && newMessage.Payload.Mesh == false {
 			//TODO Connect with server instead of other client
 			fmt.Println("SFU is asked")
 			continue
+		}
+
+		if client.hub == nil {
+			hub, _ := getOrCreateHub(newMessage.Payload.HubName)
+			client.hub = hub
+			client.hub.register <- client
 		}
 
 		if newMessage.Target == "" {
