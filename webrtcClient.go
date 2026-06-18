@@ -25,4 +25,16 @@ func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
 
 	defer peerConnection.Close()
 
+	// Accept one audio and one video track incoming
+	for _, typ := range []webrtc.RTPCodecType{webrtc.RTPCodecTypeVideo, webrtc.RTPCodecTypeAudio} {
+		_, err := peerConnection.AddTransceiverFromKind(typ, webrtc.RTPTransceiverInit{
+			Direction: webrtc.RTPTransceiverDirectionSendrecv,
+		})
+
+		if err != nil {
+			fmt.Errorf("Failed to add transceiver: %v", err)
+			return
+		}
+	}
+
 }
