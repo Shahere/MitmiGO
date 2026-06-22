@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/pion/webrtc/v4"
 )
 
 var upgrader = websocket.Upgrader{
@@ -68,6 +69,16 @@ func (client *Client) read(conn *websocket.Conn) {
 		if newMessage.Payload.Action == "join" && newMessage.Payload.Mesh == false {
 			//TODO Connect with server instead of other client
 			fmt.Println("SFU is asked")
+			webRTCHub, _ := getOrCreateWebRTCHub(newMessage.Payload.HubName)
+			webrtcClient := &WebRTCClient{
+				id:             newMessage.From.Id,
+				name:           newMessage.From.Name,
+				conn:           conn,
+				webRTCHub:      webRTCHub,
+				peerConnection: make([]*webrtc.PeerConnection, 0),
+			}
+			webRTCHub.register <- webrtcClient
+			webrtcClient.createWebRTCConnection(conn)
 			continue
 		}
 

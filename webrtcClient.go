@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gorilla/websocket"
@@ -8,10 +9,11 @@ import (
 )
 
 type WebRTCClient struct {
-	id   string
-	name string
-	hub  *Hub
-	conn *websocket.Conn
+	id             string
+	name           string
+	webRTCHub      *WebRTCHub
+	conn           *websocket.Conn
+	peerConnection []*webrtc.PeerConnection
 }
 
 func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
@@ -37,4 +39,33 @@ func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
 		}
 	}
 
+	webRTCClient.peerConnection = append(webRTCClient.peerConnection, peerConnection)
+
+	peerConnection.OnICECandidate(func(i *webrtc.ICECandidate) {
+		if i == nil {
+			return
+		}
+
+		candidateString, err := json.Marshal(i.ToJSON())
+		if err != nil {
+			fmt.Printf("Fail to marshal candidate to JSON : %v", err)
+			return
+		}
+		fmt.Printf("Send candidate to client %s", candidateString)
+		writeError := conn.WriteJSON(&Message{
+			From: ContactInfo{
+				Id:   webRTCClient.id,
+				Name: webRTCClient.name,
+			},
+			Target: webRTCClient.id,
+			Payload: PayloadType{
+				Action:    "ice",
+				Candidate: candidateString,
+				HubName:   webRTCClient.webRTCHub.name,
+			},
+		})
+		if writeError != nil {
+			fmt.Printf("Error writing Ice candidate")
+		}
+	})
 }
