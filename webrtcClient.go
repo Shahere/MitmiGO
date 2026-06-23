@@ -68,4 +68,22 @@ func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
 			fmt.Printf("Error writing Ice candidate")
 		}
 	})
+
+	peerConnection.OnConnectionStateChange(func(pcs webrtc.PeerConnectionState) {
+		fmt.Printf("Peer connection has changed %s", pcs)
+
+		switch pcs {
+		case webrtc.PeerConnectionStateFailed:
+			err := peerConnection.Close()
+			if err != nil {
+				fmt.Printf("Cant close peer connection : %v", err)
+			}
+		case webrtc.PeerConnectionStateClosed:
+			//Leaving ?
+		}
+	})
+
+	peerConnection.OnTrack(func(tr *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
+		fmt.Printf("Got remote track: Kind=%s, ID=%s, PayloadType=%d", tr.Kind(), tr.ID(), tr.PayloadType())
+	})
 }
