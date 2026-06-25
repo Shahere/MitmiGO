@@ -14,6 +14,7 @@ type WebRTCClient struct {
 	webRTCHub      *WebRTCHub
 	conn           *websocket.Conn
 	peerConnection []*webrtc.PeerConnection
+	stream         *Stream
 }
 
 func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
@@ -69,6 +70,10 @@ func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
 		}
 	})
 
+	peerConnection.OnICEConnectionStateChange(func(is webrtc.ICEConnectionState) {
+		fmt.Printf("ICE connection state changed: %s", is)
+	})
+
 	peerConnection.OnConnectionStateChange(func(pcs webrtc.PeerConnectionState) {
 		fmt.Printf("Peer connection has changed %s", pcs)
 
@@ -86,4 +91,16 @@ func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
 	peerConnection.OnTrack(func(tr *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
 		fmt.Printf("Got remote track: Kind=%s, ID=%s, PayloadType=%d", tr.Kind(), tr.ID(), tr.PayloadType())
 	})
+}
+
+//*******************************************
+
+func (webRTCClient *WebRTCClient) addTrack(track *webrtc.TrackRemote) {
+	localTrack, err := webrtc.NewTrackLocalStaticRTP(track.Codec().RTPCodecCapability, track.ID(), track.StreamID())
+	if err != nil {
+		fmt.Printf("Fail to get local track")
+	}
+
+	//TODO => Create stream and add it to client.
+	webRTCClient.stream = newStream(localTrack.ID(), localTrack.Kind())
 }
