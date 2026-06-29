@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gorilla/websocket"
+	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v4"
 )
 
@@ -90,17 +91,46 @@ func (webRTCClient *WebRTCClient) createWebRTCConnection(conn *websocket.Conn) {
 
 	peerConnection.OnTrack(func(tr *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
 		fmt.Printf("Got remote track: Kind=%s, ID=%s, PayloadType=%d", tr.Kind(), tr.ID(), tr.PayloadType())
+		localTrack := webRTCClient.addTrack(tr)
+
+		buffer := make([]byte, 1500)
+		rtpPkt := &rtp.Packet{}
+
+		for {
+			i, _, err := tr.Read(buffer)
+			if err != nil {
+				return
+			}
+
+			err = rtpPkt.Unmarshal(buffer[:i])
+			if err != nil {
+				fmt.Printf("Failed to unmarshal incoming RTP packet: %v", err)
+				return
+			}
+
+			rtpPkt.Extension = false
+			rtpPkt.Extensions = nil
+
+			// Send back if normal
+			err = localTrack.WriteRTP(rtpPkt)
+			if err != nil {
+				return
+			}
+		}
 	})
+
+	//TODO Signaling peers and send client message all this stuff
 }
 
 //*******************************************
 
-func (webRTCClient *WebRTCClient) addTrack(track *webrtc.TrackRemote) {
+func (webRTCClient *WebRTCClient) addTrack(track *webrtc.TrackRemote) *webrtc.TrackLocalStaticRTP {
 	localTrack, err := webrtc.NewTrackLocalStaticRTP(track.Codec().RTPCodecCapability, track.ID(), track.StreamID())
 	if err != nil {
 		fmt.Printf("Fail to get local track")
 	}
 
-	//TODO => Create stream and add it to client.
 	webRTCClient.stream = newStream(localTrack.ID(), localTrack.Kind())
+	//TODO defer remove stream and release pointer?
+	return localTrack
 }
