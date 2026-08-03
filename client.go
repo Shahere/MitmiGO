@@ -66,6 +66,7 @@ func (client *Client) read(conn *websocket.Conn) {
 			break
 		}
 
+		//SFU mode
 		if newMessage.Payload.Action == "join" && newMessage.Payload.Mesh == false {
 			//TODO Connect with server instead of other client
 			fmt.Println("SFU is asked")
@@ -73,15 +74,22 @@ func (client *Client) read(conn *websocket.Conn) {
 			webrtcClient := &WebRTCClient{
 				id:             newMessage.From.Id,
 				name:           newMessage.From.Name,
+				client:         client,
 				conn:           conn,
 				webRTCHub:      webRTCHub,
 				peerConnection: make([]*webrtc.PeerConnection, 0),
 			}
 			webRTCHub.register <- webrtcClient
 			webrtcClient.createWebRTCConnection(conn)
-			continue
+			break
 		}
 
+		if newMessage.Payload.Mesh == false {
+			webRTCHub, _ := getOrCreateWebRTCHub(newMessage.Payload.HubName)
+			webRTCHub.processMessage <- newMessage
+		}
+
+		// Mesh mode
 		if client.hub == nil {
 			hub, _ := getOrCreateHub(newMessage.Payload.HubName)
 			client.hub = hub

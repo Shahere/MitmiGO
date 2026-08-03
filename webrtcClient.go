@@ -13,6 +13,7 @@ type WebRTCClient struct {
 	id             string
 	name           string
 	webRTCHub      *WebRTCHub
+	client         *Client
 	conn           *websocket.Conn
 	peerConnection []*webrtc.PeerConnection
 	stream         *Stream

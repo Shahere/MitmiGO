@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 
 	"golang.org/x/exp/maps"
@@ -10,10 +11,11 @@ import (
 var webRTCHubs = make([]*WebRTCHub, 0)
 
 type WebRTCHub struct {
-	name       string
-	clients    map[*WebRTCClient]bool
-	register   chan *WebRTCClient
-	unregister chan *WebRTCClient
+	name           string
+	clients        map[*WebRTCClient]bool
+	register       chan *WebRTCClient
+	unregister     chan *WebRTCClient
+	processMessage chan *Message
 }
 
 func getOrCreateWebRTCHub(hubName string) (*WebRTCHub, error) {
@@ -35,10 +37,11 @@ func getOrCreateWebRTCHub(hubName string) (*WebRTCHub, error) {
 
 func newWebRTCHub(hubName string) *WebRTCHub {
 	webRTCHub := WebRTCHub{
-		name:       hubName,
-		clients:    make(map[*WebRTCClient]bool),
-		register:   make(chan *WebRTCClient),
-		unregister: make(chan *WebRTCClient),
+		name:           hubName,
+		clients:        make(map[*WebRTCClient]bool),
+		register:       make(chan *WebRTCClient),
+		unregister:     make(chan *WebRTCClient),
+		processMessage: make(chan *Message),
 	}
 	go webRTCHub.run()
 	webRTCHubs = append(webRTCHubs, &webRTCHub)
@@ -57,6 +60,9 @@ func (webRTCHub *WebRTCHub) run() {
 			webRTCHub.clients[webRTCClient] = true
 		case webRTCClient := <-webRTCHub.unregister:
 			delete(webRTCHub.clients, webRTCClient)
+		case message := <-webRTCHub.processMessage:
+			fmt.Printf("%v", message)
+			//TODO process message (not join, but ice candidate, close...)
 		}
 	}
 }
